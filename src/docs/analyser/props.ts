@@ -50,12 +50,14 @@ export default class PropsAnalyser extends ModuleAnalyser {
 
         optionsString.split(/, *?\n/g).forEach(option => {
             let [name, value] = option.replace(/\n/g,'').split(': ')
+            
+            if(!name || !value ) return;
 
             if(name == 'required' && value == 'true') {
                 options.Prop += '*'
             } else {
                 name = name.replace(/^./, g => g.toUpperCase())
-                value = value.replace(/\|/g, 'or')
+                value = value.replace(/\|/g, 'or').replace(/Array as PropType<(.*?)>/g, "$1")
                 options[name] = wrapText(value, '`')
             }
         })

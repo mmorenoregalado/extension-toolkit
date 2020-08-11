@@ -6,7 +6,7 @@ import { createHeader } from '../util/util'
 
 export default async function(type?: string, name?: string) {
 
-    let allowedTypes = ['interfaces', 'components']
+    let allowedTypes = ['interfaces', 'components', 'composables', 'displays']
     const analysers: typeof ModuleAnalyser[] = []
 
     if(type) {
@@ -23,7 +23,7 @@ export default async function(type?: string, name?: string) {
         const analyser = analyserFiles[i];
         
         module = await import(path.join(__dirname, 'analyser', analyser))
-        Object.values(module).forEach(value => {   
+        Object.values(module).forEach(value => {
             
             if(value instanceof Function && value.__proto__ == ModuleAnalyser) {
                 
@@ -34,20 +34,27 @@ export default async function(type?: string, name?: string) {
     }
 
     allowedTypes.forEach(folder => {
-        let modules = fs.readdirSync(path.join('src', folder)).filter(dir => !dir.match(/\..*?$/))
+        scanFolder(folder, analysers, name)
+    })
+    
+}
 
-        if(name) {
-            modules = modules.filter(module => module == name)
-        }
-        if(modules.length == 0) {
-            return console.log("The module could not be found");
-        }
+function scanFolder(folder: string, analysers: typeof ModuleAnalyser[], name?: string) {
 
-        modules.forEach(module => {
-            console.log(createHeader(module, 36));
-            createDocs(folder, module, analysers)
-        })
-        
+    const items = fs.readdirSync(path.join('src', folder));
+    let modules = items.filter(dir => !dir.match(/\..*?$/));
+
+    if(name) {
+        modules = modules.filter(module => module == name)
+    }
+    if(modules.length == 0) {
+        return console.log("The module could not be found");
+    }
+
+    modules.forEach(module => {
+        console.log(createHeader(module, 36));
+        createDocs(folder, module, analysers)
+        scanFolder(path.join(folder, module), analysers)
     })
 }
 
@@ -63,7 +70,7 @@ function createDocs(folder: string, moduleName: string, analysers: typeof Module
     let file = fs.readFileSync(vueFile).toString('utf8')
 
     if(!fs.existsSync(readmeFile)) {
-        fs.mkdirSync(readmeFile)
+        fs.appendFileSync(readmeFile, "")
         console.log("Created Readme for: ", moduleName, " at ", readmeFile);
     }
     
